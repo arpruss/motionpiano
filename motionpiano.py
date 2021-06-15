@@ -12,6 +12,7 @@ COMPARISON_VALUE = 128
 
 savedFrame = None
 savedTime = None
+lastCheckTime = None
 
 numKeys = len(NOTES)
 playing = numKeys * [False]
@@ -51,22 +52,23 @@ while True:
     blurred = cv2.GaussianBlur(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (21, 21), 0)
 
     if CONSTANT_BACKGROUND:
+        t = time.time()
         save = False
         if savedFrame is None:
             save = True
+            lastCheckTime = t
         else:
-            if time.time() >= savedTime + RESET_TIME:
-                print("resetting")
-                d = compare(savedFrame, blurred)
-                if COMPARISON_VALUE not in d:
-                    comparisonFrame = blurred
-            elif time.time() >= savedTime + SAVE_CHECK_TIME:
-                d = compare(savedFrame, blurred)
-                if COMPARISON_VALUE in d:
+            if t >= lastCheckTime + SAVE_CHECK_TIME:
+                if COMPARISON_VALUE in compare(savedFrame, blurred):
                     save = True
+                lastCheckTime = t
+            if t >= savedTime + RESET_TIME:
+                print("resetting")
+                comparisonFrame = blurred
+                save = True
         if save:
             savedFrame = blurred
-            savedTime = time.time()
+            savedTime = t
             
     if comparisonFrame is None:
         comparisonFrame = blurred
