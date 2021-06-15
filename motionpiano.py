@@ -1,12 +1,18 @@
 import time, cv2, math, pygame.midi
 import numpy as np
 
-notes = [ 60, 62, 64, 65, 67, 69, 71, 72 ]
-constantBack = True
-width = 500
-noteHeight = 0.25    
+NOTES = [ 60, 62, 64, 65, 67, 69, 71, 72 ]
+CONSTANT_BACKGROUND = True
+WIDTH = 500
+NOTE_HEIGHT = 0.25
+RESET_TIME = 5
 
-numKeys = len(notes)
+COMPARISON_VALUE = 128
+
+savedFrame = None
+nextReset = None
+
+numKeys = len(NOTES)
 playing = numKeys * [False]
 
 pygame.midi.init()
@@ -17,6 +23,9 @@ video = cv2.VideoCapture(0)
 time.sleep(2)
 comparisonFrame = None
 
+def compare(a,b):
+    return cv2.threshold(cv2.absdiff(a, b), 25, COMPARISON_VALUE, cv2.THRESH_BINARY)[1]
+    
 while True:
     ok, frame = video.read()
     if not ok:
@@ -24,38 +33,53 @@ while True:
         continue
     if comparisonFrame is None:
         aspect = frame.shape[1] / frame.shape[0]
-        height = math.floor(width / aspect)
-        keys = np.zeros((height,width),np.uint8)
-        blankOverlay = np.zeros((height,width,3),np.uint8)
+        height = math.floor(WIDTH / aspect)
+        keys = np.zeros((height,WIDTH),np.uint8)
+        blankOverlay = np.zeros((height,WIDTH,3),np.uint8)
         rects = []
 
         for i in range(numKeys):
-            x0 = math.floor(width*i/numKeys)
-            x1 = math.floor(width*(i+1)/numKeys)-1
+            x0 = math.floor(WIDTH*i/numKeys)
+            x1 = math.floor(WIDTH*(i+1)/numKeys)-1
 
-            r = [[x0,0],[x1,math.floor(noteHeight*height)]]
+            r = [[x0,0],[x1,math.floor(NOTE_HEIGHT*height)]]
             rects.append(r)
-            cv2.rectangle(keys, r[0], r[1], color=1+2*i, thickness=cv2.FILLED)
-        
-    frame = cv2.flip(cv2.resize(frame, (width,height)), 1)
+            cv2.rectangle(keys, r[0], r[1], color=1+i, thickness=cv2.FILLED)
+
+    frame = cv2.flip(cv2.resize(frame, (WIDTH,height)), 1)
     blurred = cv2.GaussianBlur(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (21, 21), 0)
+
+    if CONSTANT_BACKGROUND:
+        if savedFrame is None:
+            savedFrame = blurred
+            nextReset = time.time() + RESET_TIME
+        else:
+            if time.time() >= nextReset:
+                d = compare(savedFrame, blurred)
+                if COMPARISON_VALUE in d:
+                    savedFrame = blurred
+                else:
+                    comparisonFrame = blurred
+                nextReset = time.time() + RESET_TIME
+            
     if comparisonFrame is None:
         comparisonFrame = blurred
         continue
-    delta = cv2.dilate(cv2.threshold(cv2.absdiff(comparisonFrame, blurred), 25, 1, cv2.THRESH_BINARY)[1], None, iterations=2)
+        
+    delta = compare(comparisonFrame, blurred)
     
     sum = keys+delta
     
     overlay = blankOverlay.copy()
     for i in range(numKeys):
-        if 1+2*i+1 in sum:
+        if 1+i+COMPARISON_VALUE in sum:
             cv2.rectangle(overlay, rects[i][0], rects[i][1], color=(255,255,255), thickness=cv2.FILLED)
             if not playing[i]:
-                player.note_on(notes[i],127)
+                player.note_on(NOTES[i],127)
                 playing[i] = True
         else:
             if playing[i]:
-                player.note_off(notes[i],127)
+                player.note_off(NOTES[i],127)
                 playing[i] = False
         cv2.rectangle(overlay, rects[i][0], rects[i][1], color=(0,255,0))
             
@@ -65,7 +89,7 @@ while True:
     if not cv2.getWindowProperty("MotionPiano", cv2.WND_PROP_VISIBLE):
         break
 
-    if not constantBack:
+    if not CONSTANT_BACKGROUND:
         comparisonFrame = blurred
 
 video.release()
