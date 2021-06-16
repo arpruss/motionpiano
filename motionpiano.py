@@ -45,31 +45,48 @@ while True:
         time.sleep(0.05)
         continue
     if comparisonFrame is None:
-        aspect = frame.shape[1] / frame.shape[0]
-        height = math.floor(WIDTH / aspect)
-        blankOverlay = np.zeros((height,WIDTH,3),dtype=np.uint8)
-        rects = []
+        frameWidth = frame.shape[1]
+        frameHeight = frame.shape[0]
+        aspect = frameWidth / frameHeight
+        scaledWidth = WIDTH
+        scaledHeight = int(WIDTH / aspect)
+        
+        blankOverlay = np.zeros((frameHeight,frameWidth,3),dtype=np.uint8)
+
+        frameRects = []
+        scaledRects = []
 
         for i in range(numKeys):
-            x0 = WIDTH*i//numKeys
-            x1 = WIDTH*(i+1)//numKeys-1
+            x0 = scaledWidth*i//numKeys
+            x1 = scaledWidth*(i+1)//numKeys-1
 
-            r = [(x0,0),(x1,int(KEY_HEIGHT*height))]
-            rects.append(r)
+            r = [(x0,0),(x1,int(KEY_HEIGHT*scaledHeight))]
+            scaledRects.append(r)
+
+            x0 = frameWidth*i//numKeys
+            x1 = frameWidth*(i+1)//numKeys-1
+
+            r = [(x0,0),(x1,int(KEY_HEIGHT*frameHeight))]
+            frameRects.append(r)
             
-        keysTopLeft = (min(r[0][0] for r in rects),min(r[0][1] for r in rects))
-        keysBottomRight = (max(r[1][0] for r in rects),max(r[1][1] for r in rects))
-        keys = np.zeros((keysBottomRight[1]-keysTopLeft[1],keysBottomRight[0]-keysTopLeft[0]),dtype=np.uint8)
+        keysTopLeftScaled = (min(r[0][0] for r in scaledRects),min(r[0][1] for r in scaledRects))
+        keysBottomRightScaled = (max(r[1][0] for r in scaledRects),max(r[1][1] for r in scaledRects))
+        keysWidthScaled = keysBottomRightScaled[0]-keysTopLeftScaled[0]
+        keysHeightScaled = keysBottomRightScaled[1]-keysTopLeftScaled[1]
+        keysTopLeftFrame = (min(r[0][0] for r in frameRects),min(r[0][1] for r in frameRects))
+        keysBottomRightFrame = (max(r[1][0] for r in frameRects),max(r[1][1] for r in frameRects))
+        keys = np.zeros((keysHeightScaled,keysWidthScaled),dtype=np.uint8)
         
         def adjustToKeys(xy):
-            return (xy[0]-keysTopLeft[0],xy[1]-keysTopLeft[1])
+            return (xy[0]-keysTopLeftScaled[0],xy[1]-keysTopLeftScaled[1])
             
         for i in range(numKeys):
-            r = rects[i]
+            r = scaledRects[i]
             cv2.rectangle(keys, adjustToKeys(r[0]), adjustToKeys(r[1]), i+1, cv2.FILLED)
 
-    frame = cv2.flip(cv2.resize(frame, (WIDTH,height)), 1)
-    keysFrame = frame[keysTopLeft[1]:keysBottomRight[1], keysTopLeft[0]:keysBottomRight[0]]
+    frame = cv2.flip(frame, 1)
+    keysFrame = frame[keysTopLeftFrame[1]:keysBottomRightFrame[1], keysTopLeftFrame[0]:keysBottomRightFrame[0]]
+    keysFrame = cv2.resize(keysFrame, (keysWidthScaled,keysHeightScaled))
     blurred = cv2.GaussianBlur(cv2.cvtColor(keysFrame, cv2.COLOR_BGR2GRAY), (21, 21), 0)
 
     if CONSTANT_BACKGROUND:
@@ -102,7 +119,7 @@ while True:
     overlay = blankOverlay.copy()
     for i in range(numKeys):
         if 1+i+COMPARISON_VALUE in sum:
-            cv2.rectangle(overlay, rects[i][0], rects[i][1], (255,255,255), cv2.FILLED)
+            cv2.rectangle(overlay, frameRects[i][0], frameRects[i][1], (255,255,255), cv2.FILLED)
             if not playing[i]:
                 player.note_on(NOTES[i],127)
                 playing[i] = True
@@ -110,7 +127,7 @@ while True:
             if playing[i]:
                 player.note_off(NOTES[i],127)
                 playing[i] = False
-        cv2.rectangle(overlay, rects[i][0], rects[i][1], (0,255,0), 1)
+        cv2.rectangle(overlay, frameRects[i][0], frameRects[i][1], (0,255,0), 1)
             
     cv2.imshow("MotionPiano", cv2.addWeighted(frame, 1, overlay, 0.25, 1.0))
     if (cv2.waitKey(1) & 0xFF) == 27:
