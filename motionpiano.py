@@ -38,6 +38,8 @@ player = pygame.midi.Output(id)
 player.set_instrument(0)
 
 video = cv2.VideoCapture(0)
+#if video.get(cv2.CAP_PROP_FRAME_WIDTH) < 320:
+#    video.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('S','5','6','1'))
 #video.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('m','j','p','g'))
 #video.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 #video.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
