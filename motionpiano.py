@@ -4,7 +4,7 @@ import numpy as np
 NOTES = [ 60, 62, 64, 65, 67, 69, 71, 72 ]
 CONSTANT_BACKGROUND = True
 WIDTH = 500
-NOTE_HEIGHT = 0.25
+KEY_HEIGHT = 0.25
 RESET_TIME = 5
 SAVE_CHECK_TIME = 1
 
@@ -47,7 +47,6 @@ while True:
     if comparisonFrame is None:
         aspect = frame.shape[1] / frame.shape[0]
         height = math.floor(WIDTH / aspect)
-        keys = np.zeros((height,WIDTH),dtype=np.uint8)
         blankOverlay = np.zeros((height,WIDTH,3),dtype=np.uint8)
         rects = []
 
@@ -55,12 +54,23 @@ while True:
             x0 = WIDTH*i//numKeys
             x1 = WIDTH*(i+1)//numKeys-1
 
-            r = [(x0,0),(x1,int(NOTE_HEIGHT*height))]
+            r = [(x0,0),(x1,int(KEY_HEIGHT*height))]
             rects.append(r)
-            cv2.rectangle(keys, r[0], r[1], int(i+1), cv2.FILLED)
+            
+        keysTopLeft = (min(r[0][0] for r in rects),min(r[0][1] for r in rects))
+        keysBottomRight = (max(r[1][0] for r in rects),max(r[1][1] for r in rects))
+        keys = np.zeros((keysBottomRight[1]-keysTopLeft[1],keysBottomRight[0]-keysTopLeft[0]),dtype=np.uint8)
+        
+        def adjustToKeys(xy):
+            return (xy[0]-keysTopLeft[0],xy[1]-keysTopLeft[1])
+            
+        for i in range(numKeys):
+            r = rects[i]
+            cv2.rectangle(keys, adjustToKeys(r[0]), adjustToKeys(r[1]), i+1, cv2.FILLED)
 
     frame = cv2.flip(cv2.resize(frame, (WIDTH,height)), 1)
-    blurred = cv2.GaussianBlur(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (21, 21), 0)
+    keysFrame = frame[keysTopLeft[1]:keysBottomRight[1], keysTopLeft[0]:keysBottomRight[0]]
+    blurred = cv2.GaussianBlur(cv2.cvtColor(keysFrame, cv2.COLOR_BGR2GRAY), (21, 21), 0)
 
     if CONSTANT_BACKGROUND:
         t = time.time()
@@ -102,6 +112,7 @@ while True:
                 playing[i] = False
         cv2.rectangle(overlay, rects[i][0], rects[i][1], (0,255,0), 1)
             
+    cv2.imshow("delta", delta)
     cv2.imshow("MotionPiano", cv2.addWeighted(frame, 1, overlay, 0.25, 1.0))
     if (cv2.waitKey(1) & 0xFF) == 27:
         break
