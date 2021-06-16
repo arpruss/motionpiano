@@ -18,7 +18,18 @@ numKeys = len(NOTES)
 playing = numKeys * [False]
 
 pygame.midi.init()
-player = pygame.midi.Output(0)
+
+id = None
+for i in range(pygame.midi.get_count()):
+    info = pygame.midi.get_device_info(i)
+    if info[3]:
+        if id is None:
+            id = i
+        if b"timidity" in info[1].lower():
+            id = i
+            break
+
+player = pygame.midi.Output(id)
 player.set_instrument(0)
 
 video = cv2.VideoCapture(0)
