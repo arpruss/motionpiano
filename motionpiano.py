@@ -1,14 +1,16 @@
 import time, cv2, math, pygame.midi
 import numpy as np
 
-NOTES = [ 60, 62, 64, 65, 67, 69, 71, 72 ]
+NOTES = [ 60, 62, 64, 65, 67, 69, 71, 72, 74 ] # , 76, 77, 79 ]
 CONSTANT_BACKGROUND = True
 WIDTH = 500
 KERNEL_SIZE = 0.042
 KEY_HEIGHT = 0.25
 RESET_TIME = 5
 SAVE_CHECK_TIME = 1
+THRESHOLD = 25
 WINDOW_NAME = "MotionPiano"
+NOTE_VELOCITY = 127
 
 COMPARISON_VALUE = 128
 
@@ -44,7 +46,7 @@ video = cv2.VideoCapture(0)
 comparisonFrame = None
 
 def compare(a,b):
-    return cv2.threshold(cv2.absdiff(a, b), 25, COMPARISON_VALUE, cv2.THRESH_BINARY)[1]
+    return cv2.threshold(cv2.absdiff(a, b), THRESHOLD, COMPARISON_VALUE, cv2.THRESH_BINARY)[1]
     
 while True:
     ok, frame = video.read()
@@ -129,18 +131,18 @@ while True:
         if 1+i+COMPARISON_VALUE in sum:
             cv2.rectangle(overlay, frameRects[i][0], frameRects[i][1], (255,255,255), cv2.FILLED)
             if not playing[i]:
-                player.note_on(NOTES[i],127)
+                player.note_on(NOTES[i],NOTE_VELOCITY152501046)
                 playing[i] = True
         else:
             if playing[i]:
-                player.note_off(NOTES[i],127)
+                player.note_off(NOTES[i],NOTE_VELOCITY)
                 playing[i] = False
         cv2.rectangle(overlay, frameRects[i][0], frameRects[i][1], (0,255,0), 1)
             
-    cv2.imshow("MotionPiano", cv2.addWeighted(frame, 1, overlay, 0.25, 1.0))
+    cv2.imshow(WINDOW_NAME, cv2.addWeighted(frame, 1, overlay, 0.25, 1.0))
     if (cv2.waitKey(1) & 0xFF) == 27:
         break
-    if not cv2.getWindowProperty("MotionPiano", cv2.WND_PROP_VISIBLE):
+    if cv2.getWindowProperty(WINDOW_NAME, cv2.WND_PROP_VISIBLE) <= 0:
         break
 
     if not CONSTANT_BACKGROUND:
