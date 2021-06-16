@@ -3,7 +3,8 @@ import numpy as np
 
 NOTES = [ 60, 62, 64, 65, 67, 69, 71, 72, 74 ] # , 76, 77, 79 ]
 CONSTANT_BACKGROUND = True
-WIDTH = 500
+MINIMUM_DISPLAY_WIDTH = 640
+RECOGNIZER_WIDTH = 500
 KERNEL_SIZE = 0.042
 KEY_HEIGHT = 0.25
 RESET_TIME = 5
@@ -20,7 +21,7 @@ lastCheckTime = None
 
 numKeys = len(NOTES)
 playing = numKeys * [False]
-kernelSize = 2*int(KERNEL_SIZE*WIDTH/2)+1
+kernelSize = 2*int(KERNEL_SIZE*RECOGNIZER_WIDTH/2)+1
 
 pygame.midi.init()
 
@@ -43,6 +44,9 @@ video = cv2.VideoCapture(0)
 #video.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('m','j','p','g'))
 #video.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 #video.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+#video.set(cv2.CAP_PROP_FRAME_WIDTH, 176*2)
+#video.set(cv2.CAP_PROP_FRAME_HEIGHT, 144*2)
+print(video.get(cv2.CAP_PROP_FRAME_WIDTH),video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 comparisonFrame = None
 
 def compare(a,b):
@@ -56,15 +60,24 @@ while True:
     if comparisonFrame is None:
         frameWidth = frame.shape[1]
         frameHeight = frame.shape[0]
-        cv2.resizeWindow(WINDOW_NAME, frameWidth, frameHeight)
+        print(frameWidth,frameHeight)
         aspect = frameWidth / frameHeight
-        scaledWidth = WIDTH
-        scaledHeight = int(WIDTH / aspect)
+        if RECOGNIZER_WIDTH < frameWidth:
+            scaledWidth = frameWidth
+            scaledHeight = frameHeight
+        else:
+            scaledWidth = RECOGNIZER_WIDTH
+            scaledHeight = int(RECOGNIZER_WIDTH / aspect)
+        if frameWidth < MINIMUM_DISPLAY_WIDTH:
+            displayWidth = MINIMUM_DISPLAY_WIDTH
+            displayHeight = int(displayWidth / aspect)
+        cv2.resizeWindow(WINDOW_NAME, displayWidth, displayHeight)
         
-        blankOverlay = np.zeros((frameHeight,frameWidth,3),dtype=np.uint8)
+        blankOverlay = np.zeros((displayHeight,displayWidth,3),dtype=np.uint8)
 
-        frameRects = []
+        displayRects = []
         scaledRects = []
+        frameRects = []
 
         for i in range(numKeys):
             x0 = scaledWidth*i//numKeys
@@ -78,6 +91,12 @@ while True:
 
             r = [(x0,0),(x1,int(KEY_HEIGHT*frameHeight))]
             frameRects.append(r)
+
+            x0 = displayWidth*i//numKeys
+            x1 = displayWidth*(i+1)//numKeys-1
+
+            r = [(x0,0),(x1,int(KEY_HEIGHT*displayHeight))]
+            displayRects.append(r)
             
         keysTopLeftScaled = (min(r[0][0] for r in scaledRects),min(r[0][1] for r in scaledRects))
         keysBottomRightScaled = (max(r[1][0] for r in scaledRects),max(r[1][1] for r in scaledRects))
@@ -128,21 +147,23 @@ while True:
     
     overlay = blankOverlay.copy()
     for i in range(numKeys):
+        r = displayRects[i]
         if 1+i+COMPARISON_VALUE in sum:
-            cv2.rectangle(overlay, frameRects[i][0], frameRects[i][1], (255,255,255), cv2.FILLED)
+            cv2.rectangle(overlay, r[0], r[1], (255,255,255), cv2.FILLED)
             if not playing[i]:
-                player.note_on(NOTES[i],NOTE_VELOCITY152501046)
+                player.note_on(NOTES[i],NOTE_VELOCITY)
                 playing[i] = True
         else:
             if playing[i]:
                 player.note_off(NOTES[i],NOTE_VELOCITY)
                 playing[i] = False
-        cv2.rectangle(overlay, frameRects[i][0], frameRects[i][1], (0,255,0), 1)
+        cv2.rectangle(overlay, r[0], r[1], (0,255,0), 1)
             
-    cv2.imshow(WINDOW_NAME, cv2.addWeighted(frame, 1, overlay, 0.25, 1.0))
+    display = cv2.resize(frame, (displayWidth,displayHeight)) if frameWidth != displayWidth else frame
+    cv2.imshow(WINDOW_NAME, cv2.addWeighted(display, 1, overlay, 0.25, 1.0))
     if (cv2.waitKey(1) & 0xFF) == 27:
         break
-    if cv2.getWindowProperty(WINDOW_NAME, cv2.WND_PROP_VISIBLE) <= 0:
+    if not cv2.getWindowProperty(WINDOW_NAME, cv2.WND_PROP_VISIBLE):
         break
 
     if not CONSTANT_BACKGROUND:
