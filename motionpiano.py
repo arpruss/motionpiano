@@ -3,7 +3,7 @@ import numpy as np
 
 NOTES = [ 60, 62, 64, 65, 67, 69, 71, 72 ]
 CONSTANT_BACKGROUND = True
-WIDTH = 500
+WIDTH = 400
 KEY_HEIGHT = 0.25
 RESET_TIME = 5
 SAVE_CHECK_TIME = 1
@@ -33,7 +33,9 @@ player = pygame.midi.Output(id)
 player.set_instrument(0)
 
 video = cv2.VideoCapture(0)
-time.sleep(2)
+#video.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('m','j','p','g'))
+#video.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+#video.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 comparisonFrame = None
 
 def compare(a,b):
