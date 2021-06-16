@@ -8,6 +8,7 @@ KERNEL_SIZE = 0.042
 KEY_HEIGHT = 0.25
 RESET_TIME = 5
 SAVE_CHECK_TIME = 1
+WINDOW_NAME = "MotionPiano"
 
 COMPARISON_VALUE = 128
 
@@ -20,6 +21,8 @@ playing = numKeys * [False]
 kernelSize = 2*int(KERNEL_SIZE*WIDTH/2)+1
 
 pygame.midi.init()
+
+cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_AUTOSIZE)
 
 id = None
 for i in range(pygame.midi.get_count()):
@@ -51,6 +54,7 @@ while True:
     if comparisonFrame is None:
         frameWidth = frame.shape[1]
         frameHeight = frame.shape[0]
+        cv2.resizeWindow(WINDOW_NAME, frameWidth, frameHeight)
         aspect = frameWidth / frameHeight
         scaledWidth = WIDTH
         scaledHeight = int(WIDTH / aspect)
