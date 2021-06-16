@@ -21,11 +21,8 @@ lastCheckTime = None
 
 numKeys = len(NOTES)
 playing = numKeys * [False]
-kernelSize = 2*int(KERNEL_SIZE*RECOGNIZER_WIDTH/2)+1
 
 pygame.midi.init()
-
-cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_AUTOSIZE)
 
 id = None
 for i in range(pygame.midi.get_count()):
@@ -46,7 +43,72 @@ video = cv2.VideoCapture(0)
 #video.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 #video.set(cv2.CAP_PROP_FRAME_WIDTH, 176*2)
 #video.set(cv2.CAP_PROP_FRAME_HEIGHT, 144*2)
-print(video.get(cv2.CAP_PROP_FRAME_WIDTH),video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+frameWidth = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+frameHeight = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+print(frameWidth,frameHeight)
+aspect = frameWidth / frameHeight
+if RECOGNIZER_WIDTH < frameWidth:
+    scaledWidth = frameWidth
+    scaledHeight = frameHeight
+else:
+    scaledWidth = RECOGNIZER_WIDTH
+    scaledHeight = int(RECOGNIZER_WIDTH / aspect)
+    
+kernelSize = 2*int(KERNEL_SIZE*scaledWidth/2)+1
+
+if frameWidth < MINIMUM_DISPLAY_WIDTH:
+    displayWidth = MINIMUM_DISPLAY_WIDTH
+    displayHeight = int(displayWidth / aspect)
+else:
+    displayWidth = frameWidth
+    displayHeight = frameHeight
+
+blankOverlay = np.zeros((displayHeight,displayWidth,3),dtype=np.uint8)
+
+cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_AUTOSIZE)
+cv2.resizeWindow(WINDOW_NAME, displayWidth, displayHeight)
+
+displayRects = []
+scaledRects = []
+frameRects = []
+
+for i in range(numKeys):
+    x0 = scaledWidth*i//numKeys
+    x1 = scaledWidth*(i+1)//numKeys-1
+
+    r = [(x0,0),(x1,int(KEY_HEIGHT*scaledHeight))]
+    scaledRects.append(r)
+
+    x0 = frameWidth*i//numKeys
+    x1 = frameWidth*(i+1)//numKeys-1
+
+    r = [(x0,0),(x1,int(KEY_HEIGHT*frameHeight))]
+    frameRects.append(r)
+
+    x0 = displayWidth*i//numKeys
+    x1 = displayWidth*(i+1)//numKeys-1
+
+    r = [(x0,0),(x1,int(KEY_HEIGHT*displayHeight))]
+    displayRects.append(r)
+    
+keysTopLeftScaled = (min(r[0][0] for r in scaledRects),min(r[0][1] for r in scaledRects))
+keysBottomRightScaled = (max(r[1][0] for r in scaledRects),max(r[1][1] for r in scaledRects))
+keysWidthScaled = keysBottomRightScaled[0]-keysTopLeftScaled[0]
+keysHeightScaled = keysBottomRightScaled[1]-keysTopLeftScaled[1]
+keysTopLeftFrame = (min(r[0][0] for r in frameRects),min(r[0][1] for r in frameRects))
+keysBottomRightFrame = (max(r[1][0] for r in frameRects),max(r[1][1] for r in frameRects))
+keys = np.zeros((keysHeightScaled,keysWidthScaled),dtype=np.uint8)
+
+def adjustToKeys(xy):
+    return (xy[0]-keysTopLeftScaled[0],xy[1]-keysTopLeftScaled[1])
+    
+for i in range(numKeys):
+    r = scaledRects[i]
+    cv2.rectangle(keys, adjustToKeys(r[0]), adjustToKeys(r[1]), i+1, cv2.FILLED)
+
+
 comparisonFrame = None
 
 def compare(a,b):
@@ -57,65 +119,9 @@ while True:
     if not ok:
         time.sleep(0.05)
         continue
-    if comparisonFrame is None:
-        frameWidth = frame.shape[1]
-        frameHeight = frame.shape[0]
-        print(frameWidth,frameHeight)
-        aspect = frameWidth / frameHeight
-        if RECOGNIZER_WIDTH < frameWidth:
-            scaledWidth = frameWidth
-            scaledHeight = frameHeight
-        else:
-            scaledWidth = RECOGNIZER_WIDTH
-            scaledHeight = int(RECOGNIZER_WIDTH / aspect)
-        if frameWidth < MINIMUM_DISPLAY_WIDTH:
-            displayWidth = MINIMUM_DISPLAY_WIDTH
-            displayHeight = int(displayWidth / aspect)
-        cv2.resizeWindow(WINDOW_NAME, displayWidth, displayHeight)
-        
-        blankOverlay = np.zeros((displayHeight,displayWidth,3),dtype=np.uint8)
-
-        displayRects = []
-        scaledRects = []
-        frameRects = []
-
-        for i in range(numKeys):
-            x0 = scaledWidth*i//numKeys
-            x1 = scaledWidth*(i+1)//numKeys-1
-
-            r = [(x0,0),(x1,int(KEY_HEIGHT*scaledHeight))]
-            scaledRects.append(r)
-
-            x0 = frameWidth*i//numKeys
-            x1 = frameWidth*(i+1)//numKeys-1
-
-            r = [(x0,0),(x1,int(KEY_HEIGHT*frameHeight))]
-            frameRects.append(r)
-
-            x0 = displayWidth*i//numKeys
-            x1 = displayWidth*(i+1)//numKeys-1
-
-            r = [(x0,0),(x1,int(KEY_HEIGHT*displayHeight))]
-            displayRects.append(r)
-            
-        keysTopLeftScaled = (min(r[0][0] for r in scaledRects),min(r[0][1] for r in scaledRects))
-        keysBottomRightScaled = (max(r[1][0] for r in scaledRects),max(r[1][1] for r in scaledRects))
-        keysWidthScaled = keysBottomRightScaled[0]-keysTopLeftScaled[0]
-        keysHeightScaled = keysBottomRightScaled[1]-keysTopLeftScaled[1]
-        keysTopLeftFrame = (min(r[0][0] for r in frameRects),min(r[0][1] for r in frameRects))
-        keysBottomRightFrame = (max(r[1][0] for r in frameRects),max(r[1][1] for r in frameRects))
-        keys = np.zeros((keysHeightScaled,keysWidthScaled),dtype=np.uint8)
-        
-        def adjustToKeys(xy):
-            return (xy[0]-keysTopLeftScaled[0],xy[1]-keysTopLeftScaled[1])
-            
-        for i in range(numKeys):
-            r = scaledRects[i]
-            cv2.rectangle(keys, adjustToKeys(r[0]), adjustToKeys(r[1]), i+1, cv2.FILLED)
-
     frame = cv2.flip(frame, 1)
     keysFrame = frame[keysTopLeftFrame[1]:keysBottomRightFrame[1], keysTopLeftFrame[0]:keysBottomRightFrame[0]]
-    keysFrame = cv2.resize(keysFrame, (keysWidthScaled,keysHeightScaled))
+    keysFrame = keysFrame if scaledWidth == frameWidth else cv2.resize(keysFrame, (keysWidthScaled,keysHeightScaled))
     blurred = cv2.GaussianBlur(cv2.cvtColor(keysFrame, cv2.COLOR_BGR2GRAY), (kernelSize, kernelSize), 0)
 
     if CONSTANT_BACKGROUND:
