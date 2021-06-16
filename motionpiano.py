@@ -112,7 +112,6 @@ while True:
                 playing[i] = False
         cv2.rectangle(overlay, rects[i][0], rects[i][1], (0,255,0), 1)
             
-    cv2.imshow("delta", delta)
     cv2.imshow("MotionPiano", cv2.addWeighted(frame, 1, overlay, 0.25, 1.0))
     if (cv2.waitKey(1) & 0xFF) == 27:
         break
