@@ -3,7 +3,8 @@ import numpy as np
 
 NOTES = [ 60, 62, 64, 65, 67, 69, 71, 72 ]
 CONSTANT_BACKGROUND = True
-WIDTH = 400
+WIDTH = 500
+KERNEL_SIZE = 0.042
 KEY_HEIGHT = 0.25
 RESET_TIME = 5
 SAVE_CHECK_TIME = 1
@@ -16,6 +17,7 @@ lastCheckTime = None
 
 numKeys = len(NOTES)
 playing = numKeys * [False]
+kernelSize = 2*int(KERNEL_SIZE*WIDTH/2)+1
 
 pygame.midi.init()
 
@@ -89,7 +91,7 @@ while True:
     frame = cv2.flip(frame, 1)
     keysFrame = frame[keysTopLeftFrame[1]:keysBottomRightFrame[1], keysTopLeftFrame[0]:keysBottomRightFrame[0]]
     keysFrame = cv2.resize(keysFrame, (keysWidthScaled,keysHeightScaled))
-    blurred = cv2.GaussianBlur(cv2.cvtColor(keysFrame, cv2.COLOR_BGR2GRAY), (21, 21), 0)
+    blurred = cv2.GaussianBlur(cv2.cvtColor(keysFrame, cv2.COLOR_BGR2GRAY), (kernelSize, kernelSize), 0)
 
     if CONSTANT_BACKGROUND:
         t = time.time()
