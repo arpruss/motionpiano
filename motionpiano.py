@@ -12,6 +12,7 @@ SAVE_CHECK_TIME = 1
 THRESHOLD = 25
 WINDOW_NAME = "MotionPiano"
 NOTE_VELOCITY = 127
+FPS_SHOW = True
 
 COMPARISON_VALUE = 128
 
@@ -45,7 +46,6 @@ video = cv2.VideoCapture(0)
 #video.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 #video.set(cv2.CAP_PROP_FRAME_WIDTH, 176*2)
 #video.set(cv2.CAP_PROP_FRAME_HEIGHT, 144*2)
-
 frameWidth = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
 frameHeight = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
@@ -116,8 +116,15 @@ comparisonFrame = None
 def compare(a,b):
     return cv2.threshold(cv2.absdiff(a, b), THRESHOLD, COMPARISON_VALUE, cv2.THRESH_BINARY)[1]
     
+if FPS_SHOW:
+    readTime = 0
+
 while True:
+    if FPS_SHOW:
+        t = time.time()
     ok, frame = video.read()
+    if FPS_SHOW:
+        readTime += time.time() - t
     if not ok:
         time.sleep(0.05)
         continue
@@ -147,6 +154,10 @@ while True:
             
     if comparisonFrame is None:
         comparisonFrame = blurred
+        if FPS_SHOW:
+            frameCount = 0
+            startTime = time.time()
+            readTime = 0
         continue
         
     delta = compare(comparisonFrame, blurred)
@@ -176,6 +187,10 @@ while True:
 
     if not CONSTANT_BACKGROUND:
         comparisonFrame = blurred
+        
+    if FPS_SHOW:
+        frameCount += 1
+        print(frameCount/(time.time()-startTime),frameCount/(time.time()-startTime-readTime))
 
 video.release()
 cv2.destroyAllWindows()
