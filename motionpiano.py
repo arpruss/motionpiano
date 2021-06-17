@@ -130,8 +130,10 @@ while True:
         continue
     frame = cv2.flip(frame, 1)
     keysFrame = frame[keysTopLeftFrame[1]:keysBottomRightFrame[1], keysTopLeftFrame[0]:keysBottomRightFrame[0]]
-    keysFrame = keysFrame if scaledWidth == frameWidth else cv2.resize(keysFrame, (keysWidthScaled,keysHeightScaled))
-    blurred = cv2.GaussianBlur(cv2.cvtColor(keysFrame, cv2.COLOR_BGR2GRAY), (kernelSize, kernelSize), 0)
+    if scaledWidth != frameWidth:
+        keysFrame = cv2.resize(keysFrame, (keysWidthScaled,keysHeightScaled))
+    keysFrame = cv2.cvtColor(keysFrame, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(keysFrame, (kernelSize, kernelSize), 0)
 
     if CONSTANT_BACKGROUND:
         t = time.time()
@@ -161,10 +163,10 @@ while True:
         continue
         
     delta = compare(comparisonFrame, blurred)
-    
     sum = keys+delta
     
     overlay = blankOverlay.copy()
+
     for i in range(numKeys):
         r = displayRects[i]
         if 1+i+COMPARISON_VALUE in sum:
@@ -177,12 +179,12 @@ while True:
                 player.note_off(NOTES[i],NOTE_VELOCITY)
                 playing[i] = False
         cv2.rectangle(overlay, r[0], r[1], (0,255,0), 1)
-            
+
     display = cv2.resize(frame, (displayWidth,displayHeight)) if frameWidth != displayWidth else frame
     cv2.imshow(WINDOW_NAME, cv2.addWeighted(display, 1, overlay, 0.25, 1.0))
     if (cv2.waitKey(1) & 0xFF) == 27:
         break
-    if not cv2.getWindowProperty(WINDOW_NAME, cv2.WND_PROP_VISIBLE):
+    if cv2.getWindowProperty(WINDOW_NAME, 0) == -1:
         break
 
     if not CONSTANT_BACKGROUND:
