@@ -25,9 +25,7 @@ numKeys = len(NOTES)
 playing = numKeys * [False]
 
 midiout = rtmidi.MidiOut()
-available_ports = midiout.get_ports()
-
-assert(available_ports)
+assert(midiout.get_ports())
 midiout.open_port(0)
 
 def noteOn(note, velocity):
@@ -194,4 +192,4 @@ while True:
 
 video.release()
 cv2.destroyAllWindows()
-player.close()       
+del midiout 
