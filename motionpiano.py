@@ -1,5 +1,6 @@
-import time, cv2, math, pygame.midi
+import time, cv2, math
 import numpy as np
+import rtmidi
 
 NOTES = [ 60, 62, 64, 65, 67, 69, 71, 72, 74 ] # , 76, 77, 79 ]
 CONSTANT_BACKGROUND = True
@@ -12,7 +13,7 @@ SAVE_CHECK_TIME = 1
 THRESHOLD = 25
 WINDOW_NAME = "MotionPiano"
 NOTE_VELOCITY = 127
-FPS_SHOW = True
+FPS_SHOW = False
 
 COMPARISON_VALUE = 128
 
@@ -23,20 +24,17 @@ lastCheckTime = None
 numKeys = len(NOTES)
 playing = numKeys * [False]
 
-pygame.midi.init()
+midiout = rtmidi.MidiOut()
+available_ports = midiout.get_ports()
 
-id = None
-for i in range(pygame.midi.get_count()):
-    info = pygame.midi.get_device_info(i)
-    if info[3]:
-        if id is None:
-            id = i
-        if b"timidity" in info[1].lower():
-            id = i
-            break
+assert(available_ports)
+midiout.open_port(0)
 
-player = pygame.midi.Output(id)
-player.set_instrument(0)
+def noteOn(note, velocity):
+    midiout.send_message([0x90, note, velocity])
+
+def noteOff(note):
+    midiout.send_message([0x80, note, 0])
 
 video = cv2.VideoCapture(0)
 #if video.get(cv2.CAP_PROP_FRAME_WIDTH) < 320:
@@ -172,11 +170,11 @@ while True:
         if 1+i+COMPARISON_VALUE in sum:
             cv2.rectangle(overlay, r[0], r[1], (255,255,255), cv2.FILLED)
             if not playing[i]:
-                player.note_on(NOTES[i],NOTE_VELOCITY)
+                noteOn(NOTES[i],NOTE_VELOCITY)
                 playing[i] = True
         else:
             if playing[i]:
-                player.note_off(NOTES[i],NOTE_VELOCITY)
+                noteOff(NOTES[i])
                 playing[i] = False
         cv2.rectangle(overlay, r[0], r[1], (0,255,0), 1)
 
