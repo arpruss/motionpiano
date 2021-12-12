@@ -7,6 +7,8 @@ NOTE_VELOCITY = 127
 FPS_SHOW = False
 WINDOW_NAME = "MotionPiano"
 
+DEBUG = False
+
 CONSTANT_BACKGROUND = True
 MINIMUM_DISPLAY_WIDTH = 800
 RECOGNIZER_WIDTH = 500
@@ -130,7 +132,9 @@ while True:
     if scaledWidth != frameWidth:
         keysFrame = cv2.resize(keysFrame, (keysWidthScaled,keysHeightScaled))
     keysFrame = cv2.cvtColor(keysFrame, cv2.COLOR_BGR2GRAY)
+    if DEBUG: cv2.imshow("gray", keysFrame)
     blurred = cv2.GaussianBlur(keysFrame, (kernelSize, kernelSize), 0)
+    if DEBUG: cv2.imshow("blurred", blurred)
 
     if CONSTANT_BACKGROUND:
         t = time.time()
@@ -159,8 +163,10 @@ while True:
             readTime = 0
         continue
         
+    
     delta = compare(comparisonFrame, blurred)
-    sum = keys+delta
+    sum = keys+delta    
+    if DEBUG: cv2.imshow("sum", sum)
     
     overlay = blankOverlay.copy()
 
