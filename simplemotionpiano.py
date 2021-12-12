@@ -19,7 +19,7 @@ playing = numKeys * [False]
 
 midiout = rtmidi.MidiOut()
 assert(midiout.get_ports())
-portNumber = 0 if midiout.get_ports() == 1 or 'through' not in midiout.get_ports()[0] else 1
+portNumber = 0 if len(midiout.get_ports()) == 1 or 'through' not in str(midiout.get_ports()[0]).lower() else 1
 midiout.open_port(portNumber)
 
 video = cv2.VideoCapture(0)
