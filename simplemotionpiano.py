@@ -1,4 +1,4 @@
-import time, cv2, math
+import time, cv2
 import numpy as np
 import rtmidi
 
@@ -21,17 +21,10 @@ midiout = rtmidi.MidiOut()
 assert(midiout.get_ports())
 midiout.open_port(0)
 
-def noteOn(note, velocity):
-    midiout.send_message([0x90, note, velocity])
-
-def noteOff(note):
-    midiout.send_message([0x80, note, 0])
-
 video = cv2.VideoCapture(0)
 frameWidth = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
 frameHeight = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-print(frameWidth,frameHeight)
 aspect = frameWidth / frameHeight
 if RECOGNIZER_WIDTH >= frameWidth:
     scaledWidth = frameWidth
@@ -133,11 +126,11 @@ while True:
         if 1+i+COMPARISON_VALUE in sum:
             cv2.rectangle(overlay, r[0], r[1], (255,255,255), cv2.FILLED)
             if not playing[i]:
-                noteOn(NOTES[i],NOTE_VELOCITY)
+                midiout.send_message([0x90, NOTES[i], NOTE_VELOCITY])
                 playing[i] = True
         else:
             if playing[i]:
-                noteOff(NOTES[i])
+                midiout.send_message([0x80, NOTES[i], 0])
                 playing[i] = False
         cv2.rectangle(overlay, r[0], r[1], (0,255,0), 1)
 

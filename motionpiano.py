@@ -1,4 +1,4 @@
-import time, cv2, math
+import time, cv2
 import numpy as np
 import rtmidi
 
