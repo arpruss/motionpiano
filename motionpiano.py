@@ -42,11 +42,11 @@ frameWidth = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
 frameHeight = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 print(frameWidth,frameHeight)
-aspect = frameWidth / frameHeight
 if RECOGNIZER_WIDTH >= frameWidth:
     scaledWidth = frameWidth
     scaledHeight = frameHeight
 else:
+    aspect = frameWidth / frameHeight
     scaledWidth = RECOGNIZER_WIDTH
     scaledHeight = int(RECOGNIZER_WIDTH / aspect)
     
@@ -164,8 +164,8 @@ while True:
     overlay = blankOverlay.copy()
 
     for i in range(numKeys):
-        r = displayRects[i]
         if 1+i+COMPARISON_VALUE in sum:
+            r = displayRects[i]
             cv2.rectangle(overlay, r[0], r[1], (255,255,255), cv2.FILLED)
             if not playing[i]:
                 noteOn(NOTES[i],NOTE_VELOCITY)

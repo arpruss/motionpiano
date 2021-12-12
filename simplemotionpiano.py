@@ -5,10 +5,10 @@ import rtmidi
 NOTES = [ 60, 62, 64, 65, 67, 69, 71, 72, 74 ] # , 76, 77, 79 ]
 NOTE_VELOCITY = 127
 WINDOW_NAME = "MotionPiano"
+KEY_HEIGHT = 0.25
 
 RECOGNIZER_WIDTH = 500
 KERNEL_SIZE = 0.042
-KEY_HEIGHT = 0.25
 RESET_TIME = 5
 SAVE_CHECK_TIME = 1
 THRESHOLD = 25
@@ -25,11 +25,11 @@ video = cv2.VideoCapture(0)
 frameWidth = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
 frameHeight = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-aspect = frameWidth / frameHeight
 if RECOGNIZER_WIDTH >= frameWidth:
     scaledWidth = frameWidth
     scaledHeight = frameHeight
 else:
+    aspect = frameWidth / frameHeight
     scaledWidth = RECOGNIZER_WIDTH
     scaledHeight = int(RECOGNIZER_WIDTH / aspect)
     
@@ -87,6 +87,7 @@ while True:
         time.sleep(0.05)
         continue
     frame = cv2.flip(frame, 1)
+
     keysFrame = frame[keysTopLeftFrame[1]:keysBottomRightFrame[1], keysTopLeftFrame[0]:keysBottomRightFrame[0]]
     if scaledWidth != frameWidth:
         keysFrame = cv2.resize(keysFrame, (keysWidthScaled,keysHeightScaled))
@@ -122,8 +123,8 @@ while True:
     overlay = blankOverlay.copy()
 
     for i in range(numKeys):
-        r = frameRects[i]
         if 1+i+COMPARISON_VALUE in sum:
+            r = frameRects[i]
             cv2.rectangle(overlay, r[0], r[1], (255,255,255), cv2.FILLED)
             if not playing[i]:
                 midiout.send_message([0x90, NOTES[i], NOTE_VELOCITY])
@@ -135,6 +136,7 @@ while True:
         cv2.rectangle(overlay, r[0], r[1], (0,255,0), 1)
 
     cv2.imshow(WINDOW_NAME, cv2.addWeighted(frame, 1, overlay, 0.25, 1.0))
+    
     if (cv2.waitKey(1) & 0xFF) == 27 or cv2.getWindowProperty(WINDOW_NAME, 0) == -1:
         break
 
