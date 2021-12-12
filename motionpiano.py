@@ -47,7 +47,7 @@ frameHeight = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 print(frameWidth,frameHeight)
 aspect = frameWidth / frameHeight
-if RECOGNIZER_WIDTH < frameWidth:
+if RECOGNIZER_WIDTH >= frameWidth:
     scaledWidth = frameWidth
     scaledHeight = frameHeight
 else:
