@@ -19,7 +19,8 @@ playing = numKeys * [False]
 
 midiout = rtmidi.MidiOut()
 assert(midiout.get_ports())
-midiout.open_port(0)
+portNumber = 0 if midiout.get_ports() == 1 or 'through' not in midiout.get_ports()[0] else 1
+midiout.open_port(portNumber)
 
 video = cv2.VideoCapture(0)
 frameWidth = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -123,8 +124,8 @@ while True:
     overlay = blankOverlay.copy()
 
     for i in range(numKeys):
+        r = frameRects[i]
         if 1+i+COMPARISON_VALUE in sum:
-            r = frameRects[i]
             cv2.rectangle(overlay, r[0], r[1], (255,255,255), cv2.FILLED)
             if not playing[i]:
                 midiout.send_message([0x90, NOTES[i], NOTE_VELOCITY])

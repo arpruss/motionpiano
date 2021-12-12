@@ -8,7 +8,7 @@ FPS_SHOW = False
 WINDOW_NAME = "MotionPiano"
 
 CONSTANT_BACKGROUND = True
-MINIMUM_DISPLAY_WIDTH = 640
+MINIMUM_DISPLAY_WIDTH = 800
 RECOGNIZER_WIDTH = 500
 KERNEL_SIZE = 0.042
 KEY_HEIGHT = 0.25
@@ -22,7 +22,8 @@ playing = numKeys * [False]
 
 midiout = rtmidi.MidiOut()
 assert(midiout.get_ports())
-midiout.open_port(0)
+portNumber = 0 if midiout.get_ports() == 1 or 'through' not in midiout.get_ports()[0] else 1
+midiout.open_port(portNumber)
 
 def noteOn(note, velocity):
     midiout.send_message([0x90, note, velocity])
@@ -164,8 +165,8 @@ while True:
     overlay = blankOverlay.copy()
 
     for i in range(numKeys):
+        r = displayRects[i]
         if 1+i+COMPARISON_VALUE in sum:
-            r = displayRects[i]
             cv2.rectangle(overlay, r[0], r[1], (255,255,255), cv2.FILLED)
             if not playing[i]:
                 noteOn(NOTES[i],NOTE_VELOCITY)
