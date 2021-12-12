@@ -14,10 +14,6 @@ SAVE_CHECK_TIME = 1
 THRESHOLD = 25
 COMPARISON_VALUE = 128
 
-savedFrame = None
-savedTime = None
-lastCheckTime = None
-
 numKeys = len(NOTES)
 playing = numKeys * [False]
 
@@ -67,12 +63,14 @@ for i in range(numKeys):
     r = [(x0,0),(x1,int(KEY_HEIGHT*frameHeight))]
     frameRects.append(r)
     
+keysTopLeftFrame = (min(r[0][0] for r in frameRects),min(r[0][1] for r in frameRects))
+keysBottomRightFrame = (max(r[1][0] for r in frameRects),max(r[1][1] for r in frameRects))
+
 keysTopLeftScaled = (min(r[0][0] for r in scaledRects),min(r[0][1] for r in scaledRects))
 keysBottomRightScaled = (max(r[1][0] for r in scaledRects),max(r[1][1] for r in scaledRects))
 keysWidthScaled = keysBottomRightScaled[0]-keysTopLeftScaled[0]
 keysHeightScaled = keysBottomRightScaled[1]-keysTopLeftScaled[1]
-keysTopLeftFrame = (min(r[0][0] for r in frameRects),min(r[0][1] for r in frameRects))
-keysBottomRightFrame = (max(r[1][0] for r in frameRects),max(r[1][1] for r in frameRects))
+
 keys = np.zeros((keysHeightScaled,keysWidthScaled),dtype=np.uint8)
 
 def adjustToKeys(xy):
@@ -83,6 +81,9 @@ for i in range(numKeys):
     cv2.rectangle(keys, adjustToKeys(r[0]), adjustToKeys(r[1]), i+1, cv2.FILLED)
 
 comparisonFrame = None
+savedFrame = None
+savedTime = 0
+lastCheckTime = 0
 
 def compare(a,b):
     return cv2.threshold(cv2.absdiff(a, b), THRESHOLD, COMPARISON_VALUE, cv2.THRESH_BINARY)[1]
@@ -107,6 +108,7 @@ while True:
     else:
         if t >= lastCheckTime + SAVE_CHECK_TIME:
             if COMPARISON_VALUE in compare(savedFrame, blurred):
+                print("saving")
                 save = True
             lastCheckTime = t
         if t >= savedTime + RESET_TIME:
@@ -140,9 +142,7 @@ while True:
         cv2.rectangle(overlay, r[0], r[1], (0,255,0), 1)
 
     cv2.imshow(WINDOW_NAME, cv2.addWeighted(frame, 1, overlay, 0.25, 1.0))
-    if (cv2.waitKey(1) & 0xFF) == 27:
-        break
-    if cv2.getWindowProperty(WINDOW_NAME, 0) == -1:
+    if (cv2.waitKey(1) & 0xFF) == 27 or cv2.getWindowProperty(WINDOW_NAME, 0) == -1:
         break
 
 video.release()
