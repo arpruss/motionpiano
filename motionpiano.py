@@ -1,6 +1,8 @@
 import time, cv2
 import numpy as np
 import rtmidi
+import sys
+import getopt
 
 NOTES = [ 60, 62, 64, 65, 67, 69, 71, 72, 74 ] # , 76, 77, 79 ]
 NOTE_VELOCITY = 127
@@ -25,6 +27,21 @@ playing = numKeys * [False]
 midiout = rtmidi.MidiOut()
 assert(midiout.get_ports())
 portNumber = 0 if len(midiout.get_ports()) == 1 or 'through' not in str(midiout.get_ports()[0]).lower() else 1
+
+videoNumber = 0
+flip = True
+
+optlist, _ = getopt.getopt(sys.argv[1:], "v:m:w:n")
+for o, a in optlist:
+    if o == '-v':
+        videoNumber = int(a)
+    elif o == '-m':
+        portNumber = int(a)
+    elif o == '-w':
+        MINIMUM_DISPLAY_WIDTH = int(a)
+    elif o == '-n':
+        flip = False
+
 midiout.open_port(portNumber)
 
 def noteOn(note, velocity):
@@ -33,7 +50,7 @@ def noteOn(note, velocity):
 def noteOff(note):
     midiout.send_message([0x80, note, 0])
 
-video = cv2.VideoCapture(0)
+video = cv2.VideoCapture(videoNumber)
 #if video.get(cv2.CAP_PROP_FRAME_WIDTH) < 320:
 #    video.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('S','5','6','1'))
 #video.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('m','j','p','g'))
@@ -127,7 +144,8 @@ while True:
     if not ok:
         time.sleep(0.05)
         continue
-    frame = cv2.flip(frame, 1)
+    if flip:
+        frame = cv2.flip(frame, 1)
     keysFrame = frame[keysTopLeftFrame[1]:keysBottomRightFrame[1], keysTopLeftFrame[0]:keysBottomRightFrame[0]]
     if scaledWidth != frameWidth:
         keysFrame = cv2.resize(keysFrame, (keysWidthScaled,keysHeightScaled))
