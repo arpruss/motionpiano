@@ -13,6 +13,7 @@ DEBUG = False
 
 CONSTANT_BACKGROUND = True
 MINIMUM_DISPLAY_WIDTH = 800
+MAXIMUM_DISPLAY_WIDTH = 1900
 RECOGNIZER_WIDTH = 500
 KERNEL_SIZE = 0.042
 KEY_HEIGHT = 0.25
@@ -31,7 +32,7 @@ portNumber = 0 if len(midiout.get_ports()) == 1 or 'through' not in str(midiout.
 videoNumber = 0
 flip = True
 
-optlist, _ = getopt.getopt(sys.argv[1:], "v:m:w:n")
+optlist, _ = getopt.getopt(sys.argv[1:], "v:m:w:W:nf")
 for o, a in optlist:
     if o == '-v':
         videoNumber = int(a)
@@ -39,8 +40,12 @@ for o, a in optlist:
         portNumber = int(a)
     elif o == '-w':
         MINIMUM_DISPLAY_WIDTH = int(a)
+    elif o == '-W':
+        MAXIMUM_DISPLAY_WIDTH = int(a)
     elif o == '-n':
         flip = False
+    elif o == '-f':
+        FPS_SHOW = True
 
 midiout.open_port(portNumber)
 
@@ -75,6 +80,10 @@ kernelSize = 2*int(KERNEL_SIZE*scaledWidth/2)+1
 if frameWidth < MINIMUM_DISPLAY_WIDTH:
     displayWidth = MINIMUM_DISPLAY_WIDTH
     displayHeight = int(displayWidth / aspect)
+elif frameWidth > MAXIMUM_DISPLAY_WIDTH:
+    displayWidth = MAXIMUM_DISPLAY_WIDTH
+    displayHeight = int(displayWidth / aspect)
+    print(displayWidth)
 else:
     displayWidth = frameWidth
     displayHeight = frameHeight
@@ -199,7 +208,7 @@ while True:
             if playing[i]:
                 noteOff(NOTES[i])
                 playing[i] = False
-        cv2.rectangle(overlay, r[0], r[1], (0,255,0), 1)
+        cv2.rectangle(overlay, r[0], r[1], (0,255,0), 2)
 
     display = cv2.resize(frame, (displayWidth,displayHeight)) if frameWidth != displayWidth else frame
     cv2.imshow(WINDOW_NAME, cv2.addWeighted(display, 1, overlay, 0.25, 1.0))

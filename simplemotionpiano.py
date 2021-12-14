@@ -134,7 +134,7 @@ while True:
             if playing[i]:
                 midiout.send_message([0x80, NOTES[i], 0])
                 playing[i] = False
-        cv2.rectangle(overlay, r[0], r[1], (0,255,0), 1)
+        cv2.rectangle(overlay, r[0], r[1], (0,255,0), 2)
 
     cv2.imshow(WINDOW_NAME, cv2.addWeighted(frame, 1, overlay, 0.25, 1.0))
     
